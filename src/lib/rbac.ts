@@ -1,4 +1,4 @@
-import { JWTPayload } from './auth'
+import { JWTPayload } from '@/types'
 
 export type Permission =
   | 'view:restaurants'
@@ -28,7 +28,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
 }
 
 export function hasPermission(user: JWTPayload, permission: Permission): boolean {
-  return ROLE_PERMISSIONS[user.role].includes(permission)
+  return ROLE_PERMISSIONS[user.role as Role].includes(permission)
 }
 
 export function canAccessCountry(user: JWTPayload, targetCountry: Country): boolean {

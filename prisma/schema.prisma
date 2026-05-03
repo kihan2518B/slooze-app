@@ -13,11 +13,6 @@ enum Role {
   MEMBER
 }
 
-enum Country {
-  INDIA
-  AMERICA
-}
-
 enum OrderStatus {
   PENDING
   PLACED
@@ -46,7 +41,7 @@ model User {
   email        String     @unique
   password     String
   role         Role
-  country      Country
+  country      String
   restaurantId String?
   restaurant   Restaurant? @relation("RestaurantUsers", fields: [restaurantId], references: [id])
   createdAt    DateTime   @default(now())
@@ -59,7 +54,7 @@ model User {
 model Restaurant {
   id             String          @id @default(cuid())
   name           String
-  country        Country
+  country        String
   description    String?
   imageUrl       String?
   cuisineType    String?
@@ -118,7 +113,7 @@ model Order {
   paymentMethodId String?
   paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
   paymentRef      String?
-  country         Country
+  country         String
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
   items           OrderItem[]

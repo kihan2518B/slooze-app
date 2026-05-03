@@ -44,3 +44,37 @@ export const POST = withAuth(async (req, user, params) => {
   const item = await prisma.menuItem.create({ data: { ...parsed.data, restaurantId: params!.id, imageUrl } })
   return apiResponse(item, 201)
 })
+
+export const PUT = withAuth(async (req, user, params) => {
+  if (user.role === 'MEMBER') return apiError('Forbidden', 403)
+  const restaurant = await prisma.restaurant.findUnique({ where: { id: params?.id } })
+  if (!restaurant) return apiError('Restaurant not found', 404)
+  if (!canAccessCountry(user, restaurant.country as 'INDIA' | 'AMERICA')) return apiError('Access denied', 403)
+
+  const contentType = req.headers.get('content-type') || ''
+  let body: Record<string, string>
+  let imageUrl: string | null = null
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await req.formData()
+    body = Object.fromEntries([...formData.entries()].filter(([, v]) => typeof v === 'string')) as Record<string, string>
+    imageUrl = await uploadFromFormData(formData, 'image', 'slooze/menu')
+  } else {
+    body = await req.json()
+  }
+
+  const { id: itemId, ...restBody } = body
+  if (!itemId) return apiError('Item ID is required', 400)
+
+  const parsed = MenuItemSchema.safeParse(restBody)
+  if (!parsed.success) return apiError(parsed.error.issues.map(e => e.message).join(', '), 422)
+
+  const dataToUpdate: any = { ...parsed.data }
+  if (imageUrl) dataToUpdate.imageUrl = imageUrl
+
+  const item = await prisma.menuItem.update({
+    where: { id: itemId },
+    data: dataToUpdate
+  })
+  return apiResponse(item, 200)
+})

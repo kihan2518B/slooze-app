@@ -5,7 +5,6 @@ import { withAuth, apiResponse, apiError } from '@/lib/api-helpers'
 
 export const GET = withAuth(async (req, user) => {
   const items = await prisma.cartItem.findMany({
-    where: { userId: user.userId },
     include: { menuItem: { include: { restaurant: true } } },
   })
   return apiResponse(items)

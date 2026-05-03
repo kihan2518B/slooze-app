@@ -26,7 +26,7 @@ export const POST = withAuth(async (req, user, params) => {
   const parsed = PaymentMethodSchema.safeParse(body)
   if (!parsed.success) return apiError(parsed.error.issues.map(e => e.message).join(', '), 422)
 
-  const method = await prisma.paymentMethod.create({ data: { ...parsed.data, restaurantId: params!.id } })
+  const method = await prisma.paymentMethod.create({ data: { ...parsed.data, details: parsed.data.details as any, restaurantId: params!.id } })
   return apiResponse(method, 201)
 })
 

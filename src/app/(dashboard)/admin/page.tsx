@@ -2,7 +2,12 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { Restaurant, PaymentMethod } from '@/types'
+import { Restaurant, PaymentMethod, MenuItem } from '@/types'
+import RestaurantList from './_components/RestaurantList'
+import RestaurantForm from './_components/RestaurantForm'
+import UserForm from './_components/UserForm'
+import PaymentMethodForm from './_components/PaymentMethodForm'
+import MenuItemForm from './_components/MenuItemForm'
 
 type User = { id: string; name: string; email: string; role: string; country: string; restaurantId: string | null; restaurant?: { id: string; name: string } }
 
@@ -11,24 +16,35 @@ const PAYMENT_ICONS: Record<string, string> = { CARD: '💳', QR: '📱', UPI: '
 export default function AdminPage() {
   const { user } = useAuth()
   const router = useRouter()
-  const [tab, setTab] = useState<'users' | 'restaurants' | 'payments'>('users')
+  const [tab, setTab] = useState<'users' | 'restaurants' | 'payments' | 'menu'>('users')
   const [users, setUsers] = useState<User[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [payMethods, setPayMethods] = useState<Record<string, PaymentMethod[]>>({})
   const [loading, setLoading] = useState(true)
 
-  // New user form
-  const [newUser, setNewUser] = useState({ name: '', email: '', password: '', role: 'MEMBER', country: (user?.country || 'INDIA') as 'INDIA' | 'AMERICA', restaurantId: '' })
-  const [userError, setUserError] = useState('')
-  const [userSuccess, setUserSuccess] = useState('')
-  const [savingUser, setSavingUser] = useState(false)
+  // Restaurant form state
+  const [showRestForm, setShowRestForm] = useState(false)
+  const [editingRestaurant, setEditingRestaurant] = useState<Restaurant | undefined>(undefined)
 
-  // New payment method form
-  const [selectedRestaurant, setSelectedRestaurant] = useState('')
-  const [newMethod, setNewMethod] = useState({ type: 'CARD', details: '{}' })
-  const [payError, setPayError] = useState('')
-  const [paySuccess, setPaySuccess] = useState('')
-  const [savingPay, setSavingPay] = useState(false)
+  // Menu items state
+  const [selectedMenuRestaurant, setSelectedMenuRestaurant] = useState('')
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([])
+  const [loadingMenu, setLoadingMenu] = useState(false)
+  const [editingMenuItem, setEditingMenuItem] = useState<MenuItem | null>(null)
+
+  useEffect(() => {
+    if (selectedMenuRestaurant) {
+      setLoadingMenu(true)
+      fetch(`/api/restaurants/${selectedMenuRestaurant}/menu`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) setMenuItems(data.data)
+        })
+        .finally(() => setLoadingMenu(false))
+    } else {
+      setMenuItems([])
+    }
+  }, [selectedMenuRestaurant])
 
   useEffect(() => {
     if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
@@ -42,7 +58,6 @@ export default function AdminPage() {
       if (uData.success) setUsers(uData.data)
       if (rData.success) {
         setRestaurants(rData.data)
-        if (rData.data.length > 0) setSelectedRestaurant(rData.data[0].id)
         // Fetch payment methods for all restaurants
         Promise.all(rData.data.map((r: Restaurant) =>
           fetch(`/api/restaurants/${r.id}/payment-methods`).then(res => res.json()).then(d => [r.id, d.data || []])
@@ -50,50 +65,6 @@ export default function AdminPage() {
       }
     }).finally(() => setLoading(false))
   }, [user, router])
-
-  const handleCreateUser = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setUserError(''); setUserSuccess(''); setSavingUser(true)
-    try {
-      const res = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newUser),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      setUsers(prev => [data.data, ...prev])
-      setUserSuccess(`User ${data.data.name} created!`)
-      setNewUser({ name: '', email: '', password: '', role: 'MEMBER', country: (user?.country || 'INDIA') as 'INDIA' | 'AMERICA', restaurantId: '' })
-    } catch (err) {
-      setUserError(err instanceof Error ? err.message : 'Failed')
-    } finally {
-      setSavingUser(false)
-    }
-  }
-
-  const handleAddPayment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setPayError(''); setPaySuccess(''); setSavingPay(true)
-    try {
-      let details: Record<string, unknown>
-      try { details = JSON.parse(newMethod.details) } catch { throw new Error('Invalid JSON in details field') }
-      const res = await fetch(`/api/restaurants/${selectedRestaurant}/payment-methods`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: newMethod.type, details }),
-      })
-      const data = await res.json()
-      if (!data.success) throw new Error(data.error)
-      setPayMethods(prev => ({ ...prev, [selectedRestaurant]: [...(prev[selectedRestaurant] || []), data.data] }))
-      setPaySuccess('Payment method added!')
-      setNewMethod({ type: 'CARD', details: '{}' })
-    } catch (err) {
-      setPayError(err instanceof Error ? err.message : 'Failed')
-    } finally {
-      setSavingPay(false)
-    }
-  }
 
   const handleTogglePayment = async (restaurantId: string, methodId: string, isActive: boolean) => {
     const res = await fetch(`/api/restaurants/${restaurantId}/payment-methods`, {
@@ -110,20 +81,15 @@ export default function AdminPage() {
     }
   }
 
-  const PRESET_DETAILS: Record<string, string> = {
-    CARD: JSON.stringify({ label: 'Credit/Debit Card', acceptedNetworks: ['VISA', 'MASTERCARD'], currency: 'INR' }, null, 2),
-    QR: JSON.stringify({ label: 'QR Payment', qrImageUrl: null, currency: 'INR' }, null, 2),
-    UPI: JSON.stringify({ upiId: 'restaurant@upi', currency: 'INR' }, null, 2),
-    BANK_TRANSFER: JSON.stringify({ accountNumber: '1234567890', ifsc: 'BANK0001234', bankName: 'State Bank', currency: 'INR' }, null, 2),
-    WALLET: JSON.stringify({ label: 'Digital Wallets', providers: ['GOOGLE_PAY', 'APPLE_PAY'], currency: 'INR' }, null, 2),
-  }
-
   if (loading) return <div style={{ textAlign: 'center', padding: '3rem' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
 
   const TABS = [
     { key: 'users', label: 'Users' },
     { key: 'restaurants', label: 'Restaurants' },
-    ...(user?.role === 'ADMIN' ? [{ key: 'payments', label: 'Payment Methods' }] : []),
+    ...(user?.role === 'ADMIN' ? [
+      { key: 'menu', label: 'Menu Items' },
+      { key: 'payments', label: 'Payment Methods' }
+    ] : []),
   ]
 
   return (
@@ -186,73 +152,90 @@ export default function AdminPage() {
             </div>
           </div>
 
-          <div className="card" style={{ position: 'sticky', top: 80 }}>
-            <h2 className="font-display" style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.25rem' }}>Add User</h2>
-            {userSuccess && <div style={{ background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 8, padding: '0.625rem', marginBottom: '1rem', color: '#065F46', fontSize: '0.875rem' }}>{userSuccess}</div>}
-            {userError && <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: 8, padding: '0.625rem', marginBottom: '1rem', color: '#991B1B', fontSize: '0.875rem' }}>{userError}</div>}
-            <form onSubmit={handleCreateUser} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Full name</label>
-                <input className="input-field" value={newUser.name} onChange={e => setNewUser(p => ({ ...p, name: e.target.value }))} required placeholder="John Doe" />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Email</label>
-                <input type="email" className="input-field" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} required placeholder="john@company.com" />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Password</label>
-                <input type="password" className="input-field" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} required minLength={6} placeholder="Min 6 chars" />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Role</label>
-                  <select className="input-field" value={newUser.role} onChange={e => setNewUser(p => ({ ...p, role: e.target.value }))}>
-                    {user?.role === 'ADMIN' && <option value="MANAGER">Manager</option>}
-                    <option value="MEMBER">Member</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Country</label>
-                  <select className="input-field" value={newUser.country} onChange={e => setNewUser(p => ({ ...p, country: e.target.value as 'INDIA' | 'AMERICA' }))} disabled={user?.role === 'MANAGER'}>
-                    <option value="INDIA">India</option>
-                    <option value="AMERICA">America</option>
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Assign to restaurant</label>
-                <select className="input-field" value={newUser.restaurantId} onChange={e => setNewUser(p => ({ ...p, restaurantId: e.target.value }))}>
-                  <option value="">— None —</option>
-                  {restaurants.map(r => <option key={r.id} value={r.id}>{r.name} ({r.country})</option>)}
-                </select>
-              </div>
-              <button type="submit" className="btn-primary" disabled={savingUser} style={{ width: '100%', justifyContent: 'center' }}>
-                {savingUser ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Creating...</> : '+ Create User'}
-              </button>
-            </form>
-          </div>
+          <UserForm 
+            currentUser={user!} 
+            restaurants={restaurants} 
+            onSuccess={(u) => setUsers(prev => [u, ...prev])}
+          />
         </div>
       )}
 
       {/* Restaurants tab */}
       {tab === 'restaurants' && (
         <div>
-          <h2 className="font-display" style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1rem' }}>Your Restaurants</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-            {restaurants.map(r => (
-              <div key={r.id} className="card" style={{ padding: '1.25rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.75rem' }}>
-                  <h3 className="font-display" style={{ fontSize: '1rem', fontWeight: 700, margin: 0 }}>{r.name}</h3>
-                  <span className={`badge ${r.country === 'INDIA' ? 'badge-india' : 'badge-america'}`}>{r.country === 'INDIA' ? '🇮🇳' : '🇺🇸'}</span>
-                </div>
-                {r.description && <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.75rem', lineHeight: 1.5 }}>{r.description}</p>}
-                <div style={{ display: 'flex', gap: '1rem', fontSize: '0.8125rem', color: 'var(--text-3)' }}>
-                  {r.cuisineType && <span>🍴 {r.cuisineType}</span>}
-                  {r._count && <span>📋 {r._count.menuItems} items</span>}
-                </div>
-              </div>
-            ))}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 className="font-display" style={{ fontSize: '1.125rem', fontWeight: 600, margin: 0 }}>Your Restaurants</h2>
+            {user?.role === 'ADMIN' && (
+              <button onClick={() => { setEditingRestaurant(undefined); setShowRestForm(true) }} className="btn-primary" style={{ padding: '0.4rem 0.875rem', fontSize: '0.875rem' }}>
+                + Add Restaurant
+              </button>
+            )}
           </div>
+          <RestaurantList 
+            restaurants={restaurants} 
+            onEdit={(r) => {
+              setEditingRestaurant(r)
+              setShowRestForm(true)
+            }}
+          />
+        </div>
+      )}
+
+      {/* Menu Items tab – ADMIN only */}
+      {tab === 'menu' && user?.role === 'ADMIN' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 380px', gap: '1.5rem', alignItems: 'start' }}>
+          <div>
+            <h2 className="font-display" style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.25rem' }}>Menu Items Overview</h2>
+            {!selectedMenuRestaurant ? (
+              <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '2rem', textAlign: 'center', color: 'var(--text-2)' }}>
+                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '1rem' }}>🍔</span>
+                <p>Select a restaurant on the right to manage menu items.</p>
+              </div>
+            ) : loadingMenu ? (
+              <div style={{ textAlign: 'center', padding: '2rem' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
+            ) : menuItems.length === 0 ? (
+              <p style={{ color: 'var(--text-3)', fontStyle: 'italic' }}>No menu items found.</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {menuItems.map(item => (
+                  <div key={item.id} className="card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                    <div style={{ width: 60, height: 60, background: 'var(--surface-2)', borderRadius: 8, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🍽️'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
+                        <h3 className="font-display" style={{ fontSize: '1rem', fontWeight: 600, margin: 0 }}>{item.name}</h3>
+                        <span style={{ fontWeight: 700, color: 'var(--text)' }}>${item.price}</span>
+                      </div>
+                      <div style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginBottom: '0.25rem' }}>{item.category}</div>
+                      {item.description && <p style={{ fontSize: '0.8125rem', color: 'var(--text-2)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.description}</p>}
+                    </div>
+                    <button onClick={() => setEditingMenuItem(item)} className="btn-ghost" style={{ padding: '0.4rem 0.875rem', fontSize: '0.8125rem', border: '1px solid var(--border)' }}>
+                      Edit
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <MenuItemForm 
+            restaurants={restaurants} 
+            selectedRestaurantId={selectedMenuRestaurant}
+            onRestaurantChange={setSelectedMenuRestaurant}
+            initialData={editingMenuItem}
+            onCancel={() => setEditingMenuItem(null)}
+            onSuccess={() => {
+              setEditingMenuItem(null)
+              // Refresh menu items
+              setLoadingMenu(true)
+              fetch(`/api/restaurants/${selectedMenuRestaurant}/menu`)
+                .then(res => res.json())
+                .then(data => {
+                  if (data.success) setMenuItems(data.data)
+                })
+                .finally(() => setLoadingMenu(false))
+            }} 
+          />
         </div>
       )}
 
@@ -290,44 +273,26 @@ export default function AdminPage() {
             ))}
           </div>
 
-          <div className="card" style={{ position: 'sticky', top: 80 }}>
-            <h2 className="font-display" style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.25rem' }}>Add Payment Method</h2>
-            {paySuccess && <div style={{ background: '#D1FAE5', border: '1px solid #6EE7B7', borderRadius: 8, padding: '0.625rem', marginBottom: '1rem', color: '#065F46', fontSize: '0.875rem' }}>{paySuccess}</div>}
-            {payError && <div style={{ background: '#FEE2E2', border: '1px solid #FCA5A5', borderRadius: 8, padding: '0.625rem', marginBottom: '1rem', color: '#991B1B', fontSize: '0.875rem' }}>{payError}</div>}
-            <form onSubmit={handleAddPayment} style={{ display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Restaurant</label>
-                <select className="input-field" value={selectedRestaurant} onChange={e => setSelectedRestaurant(e.target.value)}>
-                  {restaurants.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Type</label>
-                <select className="input-field" value={newMethod.type}
-                  onChange={e => setNewMethod(p => ({ ...p, type: e.target.value, details: PRESET_DETAILS[e.target.value] || '{}' }))}>
-                  <option value="CARD">💳 Card</option>
-                  <option value="QR">📱 QR Code</option>
-                  <option value="UPI">⚡ UPI</option>
-                  <option value="BANK_TRANSFER">🏦 Bank Transfer</option>
-                  <option value="WALLET">👛 Wallet</option>
-                </select>
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Details (JSON)</label>
-                <textarea
-                  className="input-field"
-                  value={newMethod.details}
-                  onChange={e => setNewMethod(p => ({ ...p, details: e.target.value }))}
-                  rows={6}
-                  style={{ fontFamily: 'monospace', fontSize: '0.8125rem', resize: 'vertical' }}
-                />
-              </div>
-              <button type="submit" className="btn-primary" disabled={savingPay} style={{ width: '100%', justifyContent: 'center' }}>
-                {savingPay ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Adding...</> : '+ Add Method'}
-              </button>
-            </form>
-          </div>
+          <PaymentMethodForm 
+            restaurants={restaurants} 
+            onSuccess={(restId, pm) => setPayMethods(prev => ({ ...prev, [restId]: [...(prev[restId] || []), pm] }))} 
+          />
         </div>
+      )}
+      {/* Add/Edit Restaurant Dialog */}
+      {showRestForm && (
+        <RestaurantForm 
+          initialData={editingRestaurant}
+          onSuccess={(restaurant, isEdit) => {
+            if (isEdit) {
+              setRestaurants(prev => prev.map(r => r.id === restaurant.id ? { ...r, ...restaurant } : r))
+            } else {
+              setRestaurants(prev => [restaurant, ...prev])
+            }
+            setShowRestForm(false)
+          }}
+          onCancel={() => setShowRestForm(false)}
+        />
       )}
     </div>
   )

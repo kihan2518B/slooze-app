@@ -3,11 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Restaurant } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
-
-const CUISINE_EMOJIS: Record<string, string> = {
-  'North Indian': '🍛', 'Street Food': '🥘', 'American': '🍔', 'Fine Dining': '🍽️',
-  'Italian': '🍝', 'Chinese': '🥡', 'Mexican': '🌮', 'Japanese': '🍜',
-}
+import RestaurantCard from '@/components/RestaurantCard'
 
 export default function RestaurantsPage() {
   const { user } = useAuth()
@@ -70,71 +66,7 @@ export default function RestaurantsPage() {
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.25rem' }}>
           {filtered.map((r, idx) => (
-            <Link
-              key={r.id}
-              href={`/restaurants/${r.id}`}
-              style={{ textDecoration: 'none' }}
-            >
-              <div
-                className="animate-fade-in"
-                style={{
-                  background: 'var(--surface)',
-                  border: '1px solid var(--border)',
-                  borderRadius: 16,
-                  overflow: 'hidden',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  animationDelay: `${idx * 0.05}s`,
-                }}
-                onMouseEnter={e => {
-                  const el = e.currentTarget
-                  el.style.transform = 'translateY(-3px)'
-                  el.style.boxShadow = '0 12px 32px rgba(0,0,0,0.08)'
-                  el.style.borderColor = 'var(--brand)'
-                }}
-                onMouseLeave={e => {
-                  const el = e.currentTarget
-                  el.style.transform = ''
-                  el.style.boxShadow = ''
-                  el.style.borderColor = 'var(--border)'
-                }}
-              >
-                {/* Image */}
-                <div style={{ height: 160, background: 'var(--surface-2)', position: 'relative', overflow: 'hidden' }}>
-                  {r.imageUrl ? (
-                    <img src={r.imageUrl} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  ) : (
-                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem' }}>
-                      {CUISINE_EMOJIS[r.cuisineType || ''] || '🍽️'}
-                    </div>
-                  )}
-                  <div style={{ position: 'absolute', top: 12, right: 12 }}>
-                    <span className={`badge ${r.country === 'INDIA' ? 'badge-india' : 'badge-america'}`}>
-                      {r.country === 'INDIA' ? '🇮🇳 India' : '🇺🇸 America'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div style={{ padding: '1.25rem' }}>
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <h3 className="font-display" style={{ fontSize: '1.0625rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>{r.name}</h3>
-                    {r.cuisineType && (
-                      <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', flexShrink: 0 }}>{r.cuisineType}</span>
-                    )}
-                  </div>
-                  {r.description && (
-                    <p style={{ fontSize: '0.875rem', color: 'var(--text-2)', margin: '0 0 0.75rem', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                      {r.description}
-                    </p>
-                  )}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8125rem', color: 'var(--text-3)' }}>
-                    {r.address && <span>📍 {r.address}</span>}
-                    {r._count && <span>🍴 {r._count.menuItems} items</span>}
-                  </div>
-                </div>
-              </div>
-            </Link>
+            <RestaurantCard key={r.id} restaurant={r} idx={idx} />
           ))}
         </div>
       )}

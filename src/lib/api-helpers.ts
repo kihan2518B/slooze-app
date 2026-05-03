@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { verifyToken, getTokenFromRequest, JWTPayload } from './auth'
+import { verifyToken, getTokenFromRequest } from './auth'
+import { JWTPayload } from '@/types'
 import { hasPermission, Permission } from './rbac'
 
 export function apiResponse(data: unknown, status = 200) {

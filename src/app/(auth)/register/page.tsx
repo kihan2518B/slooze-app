@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/contexts/AuthContext'
+import { COUNTRIES } from '@/data'
 
 export default function RegisterPage() {
   const { refresh } = useAuth()
@@ -86,8 +87,7 @@ export default function RegisterPage() {
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)', marginBottom: '0.4rem' }}>Country *</label>
                 <select className="input-field" value={form.country} onChange={e => set('country', e.target.value)}>
-                  <option value="INDIA">India</option>
-                  <option value="AMERICA">America</option>
+                  {COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
                 </select>
               </div>
               <div>
