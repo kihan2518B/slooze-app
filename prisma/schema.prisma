@@ -1,0 +1,149 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  MEMBER
+}
+
+enum Country {
+  INDIA
+  AMERICA
+}
+
+enum OrderStatus {
+  PENDING
+  PLACED
+  CANCELLED
+  DELIVERED
+}
+
+enum PaymentType {
+  CARD
+  QR
+  UPI
+  BANK_TRANSFER
+  WALLET
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  name         String
+  email        String     @unique
+  password     String
+  role         Role
+  country      Country
+  restaurantId String?
+  restaurant   Restaurant? @relation("RestaurantUsers", fields: [restaurantId], references: [id])
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  orders       Order[]
+  cartItems    CartItem[]
+  @@map("users")
+}
+
+model Restaurant {
+  id             String          @id @default(cuid())
+  name           String
+  country        Country
+  description    String?
+  imageUrl       String?
+  cuisineType    String?
+  address        String?
+  isActive       Boolean         @default(true)
+  adminEmail     String
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  menuItems      MenuItem[]
+  orders         Order[]
+  users          User[]          @relation("RestaurantUsers")
+  paymentMethods PaymentMethod[]
+  @@map("restaurants")
+}
+
+model MenuItem {
+  id           String     @id @default(cuid())
+  name         String
+  description  String?
+  price        Float
+  imageUrl     String?
+  category     String
+  isAvailable  Boolean    @default(true)
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  orderItems   OrderItem[]
+  cartItems    CartItem[]
+  @@map("menu_items")
+}
+
+model PaymentMethod {
+  id           String      @id @default(cuid())
+  type         PaymentType
+  isActive     Boolean     @default(true)
+  restaurantId String
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  details      Json
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  orders       Order[]
+  @@map("payment_methods")
+}
+
+model Order {
+  id              String         @id @default(cuid())
+  status          OrderStatus    @default(PENDING)
+  totalAmount     Float
+  paymentStatus   PaymentStatus  @default(PENDING)
+  notes           String?
+  userId          String
+  user            User           @relation(fields: [userId], references: [id])
+  restaurantId    String
+  restaurant      Restaurant     @relation(fields: [restaurantId], references: [id])
+  paymentMethodId String?
+  paymentMethod   PaymentMethod? @relation(fields: [paymentMethodId], references: [id])
+  paymentRef      String?
+  country         Country
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  items           OrderItem[]
+  @@map("orders")
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  quantity   Int
+  price      Float
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+  @@map("order_items")
+}
+
+model CartItem {
+  id         String   @id @default(cuid())
+  quantity   Int      @default(1)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  menuItemId String
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+  @@unique([userId, menuItemId])
+  @@map("cart_items")
+}

@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --brand: #2563EB; /* Primary CTA Blue */
+  --brand-dark: #1D4ED8;
+  --brand-light: #EFF6FF;
+  --surface: #FFFFFF;
+  --surface-2: #F9FAFB;
+  --border: #E5E7EB;
+  --text: #111827;
+  --text-2: #4B5563;
+  --text-3: #9CA3AF;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --india: #FF9933;
+  --america: #3B82F6;
+  font-family: 'DM Sans', sans-serif;
+}
+
+
+* { box-sizing: border-box; }
+body { background: var(--surface); color: var(--text); }
+h1, h2, h3, h4, h5, h6 { font-family: 'Syne', sans-serif; }
+
+.font-display { font-family: 'Syne', sans-serif; }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+/* Custom components */
+.btn-primary {
+  background: var(--brand);
+  color: white;
+  padding: 0.625rem 1.5rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  transition: all 0.15s;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.btn-primary:hover { background: var(--brand-dark); transform: translateY(-1px); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-2);
+  padding: 0.625rem 1rem;
+  border-radius: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9375rem;
+  transition: all 0.15s;
+  border: 1px solid var(--border);
+  cursor: pointer;
+}
+.btn-ghost:hover { background: var(--surface-2); color: var(--text); border-color: var(--text-3); }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+}
+
+.input-field {
+  width: 100%;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  padding: 0.625rem 0.875rem;
+  font-size: 0.9375rem;
+  color: var(--text);
+  transition: border-color 0.15s;
+  outline: none;
+}
+.input-field:focus { border-color: var(--brand); }
+.input-field::placeholder { color: var(--text-3); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.2rem 0.65rem;
+  border-radius: 99px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+.badge-admin { background: #FEF3C7; color: #92400E; }
+.badge-manager { background: #DBEAFE; color: #1E40AF; }
+.badge-member { background: #F3F4F6; color: #374151; }
+.badge-india { background: #FFF7ED; color: #9A3412; }
+.badge-america { background: #EFF6FF; color: #1E40AF; }
+.badge-placed { background: #D1FAE5; color: #065F46; }
+.badge-pending { background: #FEF3C7; color: #92400E; }
+.badge-cancelled { background: #FEE2E2; color: #991B1B; }
+.badge-delivered { background: #D1FAE5; color: #065F46; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes slideIn { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-4px)} 75%{transform:translateX(4px)} }
+
+.animate-fade-in { animation: fadeIn 0.3s ease-out; }
+.animate-slide-in { animation: slideIn 0.3s ease-out; }
+.spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--brand); border-radius: 50%; animation: spin 0.7s linear infinite; }
+.skeleton { background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%); background-size: 200% 100%; animation: pulse 1.5s ease-in-out infinite; border-radius: 0.5rem; }
+
+.page-enter { animation: fadeIn 0.35s ease-out; }
