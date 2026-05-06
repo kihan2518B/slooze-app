@@ -1,6 +1,6 @@
 export const COUNTRIES = [
-  { value: 'INDIA', label: 'India', icon: '🇮🇳' },
-  { value: 'AMERICA', label: 'America', icon: '🇺🇸' },
+  { value: 'INDIA', label: 'India' },
+  { value: 'AMERICA', label: 'America' },
 ] as const;
 
 export type Country = typeof COUNTRIES[number]['value'];

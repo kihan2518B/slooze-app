@@ -67,11 +67,11 @@ export default function PaymentMethodForm({ restaurants, onSuccess }: PaymentMet
           <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Type</label>
           <select className="input-field" value={newMethod.type}
             onChange={e => setNewMethod(p => ({ ...p, type: e.target.value, details: PRESET_DETAILS[e.target.value] || '{}' }))}>
-            <option value="CARD">💳 Card</option>
-            <option value="QR">📱 QR Code</option>
-            <option value="UPI">⚡ UPI</option>
-            <option value="BANK_TRANSFER">🏦 Bank Transfer</option>
-            <option value="WALLET">👛 Wallet</option>
+            <option value="CARD">Card</option>
+            <option value="QR">QR Code</option>
+            <option value="UPI">UPI</option>
+            <option value="BANK_TRANSFER">Bank Transfer</option>
+            <option value="WALLET">Wallet</option>
           </select>
         </div>
         <div>

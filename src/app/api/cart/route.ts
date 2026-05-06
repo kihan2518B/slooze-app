@@ -5,6 +5,7 @@ import { withAuth, apiResponse, apiError } from '@/lib/api-helpers'
 
 export const GET = withAuth(async (req, user) => {
   const items = await prisma.cartItem.findMany({
+    where: { userId: user.userId },
     include: { menuItem: { include: { restaurant: true } } },
   })
   return apiResponse(items)
@@ -29,6 +30,15 @@ export const POST = withAuth(async (req, user) => {
   // ReBAC: user can only add items from their country
   if (user.role !== 'ADMIN' && menuItem.restaurant.country !== user.country) {
     return apiError('Cannot add items from restaurants in a different country', 403)
+  }
+
+  // Ensure cart only contains items from a single restaurant
+  const currentCartItems = await prisma.cartItem.findMany({
+    where: { userId: user.userId },
+    include: { menuItem: true }
+  })
+  if (currentCartItems.length > 0 && currentCartItems[0].menuItem.restaurantId !== menuItem.restaurantId) {
+    return apiError('Your cart contains items from a different restaurant. Clear it before adding items from here.', 400)
   }
 
   const existing = await prisma.cartItem.findUnique({

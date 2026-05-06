@@ -18,6 +18,7 @@ export const GET = withAuth(async (req, user) => {
       restaurant: { select: { id: true, name: true } },
       items: { include: { menuItem: true } },
       paymentMethod: true,
+      confirmedBy: { select: { id: true, name: true } }
     },
     orderBy: { createdAt: 'desc' },
   })
@@ -31,9 +32,6 @@ const PlaceOrderSchema = z.object({
 })
 
 export const POST = withAuth(async (req, user) => {
-  if (!hasPermission(user, 'place:order')) {
-    return apiError('Members cannot place orders. A manager or admin must approve.', 403)
-  }
 
   const body = await req.json()
   const parsed = PlaceOrderSchema.safeParse(body)
@@ -52,10 +50,13 @@ export const POST = withAuth(async (req, user) => {
   if (!paymentMethod) return apiError('Payment method not available', 400)
 
   const cartItems = await prisma.cartItem.findMany({
-    where: { userId: user.userId },
+    where: { 
+      userId: user.userId,
+      menuItem: { restaurantId: parsed.data.restaurantId }
+    },
     include: { menuItem: true },
   })
-  if (cartItems.length === 0) return apiError('Cart is empty', 400)
+  if (cartItems.length === 0) return apiError('Cart is empty for this restaurant', 400)
 
   const totalAmount = cartItems.reduce((sum: number, item: { menuItem: { price: number }; quantity: number }) => sum + item.menuItem.price * item.quantity, 0)
 
@@ -66,8 +67,9 @@ export const POST = withAuth(async (req, user) => {
       paymentMethodId: parsed.data.paymentMethodId,
       totalAmount,
       country: user.role === 'ADMIN' ? restaurant.country : user.country,
-      status: 'PLACED',
-      paymentStatus: 'COMPLETED',
+      status: user.role === 'MEMBER' ? 'PENDING' : 'PLACED',
+      paymentStatus: 'PENDING', // Payment is marked completed upon confirmation or actual payment
+      confirmedById: user.role === 'MEMBER' ? null : user.userId,
       paymentRef: `PAY-${Date.now()}-${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
       notes: parsed.data.notes,
       items: {
@@ -83,9 +85,15 @@ export const POST = withAuth(async (req, user) => {
       restaurant: true,
       paymentMethod: true,
       user: { select: { id: true, name: true, email: true } },
+      confirmedBy: { select: { id: true, name: true } }
     },
   })
 
-  await prisma.cartItem.deleteMany({ where: { userId: user.userId } })
+  await prisma.cartItem.deleteMany({ 
+    where: { 
+      userId: user.userId,
+      menuItem: { restaurantId: parsed.data.restaurantId }
+    } 
+  })
   return apiResponse(order, 201)
 })

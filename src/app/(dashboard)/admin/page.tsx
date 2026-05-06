@@ -8,10 +8,17 @@ import RestaurantForm from './_components/RestaurantForm'
 import UserForm from './_components/UserForm'
 import PaymentMethodForm from './_components/PaymentMethodForm'
 import MenuItemForm from './_components/MenuItemForm'
+import { MapPin, Utensils, CreditCard, QrCode, Zap, Landmark, Wallet } from 'lucide-react'
 
 type User = { id: string; name: string; email: string; role: string; country: string; restaurantId: string | null; restaurant?: { id: string; name: string } }
 
-const PAYMENT_ICONS: Record<string, string> = { CARD: '💳', QR: '📱', UPI: '⚡', BANK_TRANSFER: '🏦', WALLET: '👛' }
+const PAYMENT_ICONS: Record<string, React.ReactNode> = { 
+  CARD: <CreditCard size={18} />, 
+  QR: <QrCode size={18} />, 
+  UPI: <Zap size={18} />, 
+  BANK_TRANSFER: <Landmark size={18} />, 
+  WALLET: <Wallet size={18} /> 
+}
 
 export default function AdminPage() {
   const { user } = useAuth()
@@ -47,7 +54,7 @@ export default function AdminPage() {
   }, [selectedMenuRestaurant])
 
   useEffect(() => {
-    if (!user || (user.role !== 'ADMIN' && user.role !== 'MANAGER')) {
+    if (!user || user.role !== 'ADMIN') {
       router.push('/restaurants')
       return
     }
@@ -142,7 +149,7 @@ export default function AdminPage() {
                   </div>
                   <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                     <span className={`badge badge-${u.role.toLowerCase()}`}>{u.role}</span>
-                    <span className={`badge ${u.country === 'INDIA' ? 'badge-india' : 'badge-america'}`}>{u.country === 'INDIA' ? '🇮🇳' : '🇺🇸'} {u.country}</span>
+                    <span className={`badge ${u.country === 'INDIA' ? 'badge-india' : 'badge-america'}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={12} /> {u.country}</span>
                   </div>
                   {u.restaurant && (
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-3)', whiteSpace: 'nowrap' }}>{u.restaurant.name}</span>
@@ -188,7 +195,7 @@ export default function AdminPage() {
             <h2 className="font-display" style={{ fontSize: '1.125rem', fontWeight: 600, marginBottom: '1.25rem' }}>Menu Items Overview</h2>
             {!selectedMenuRestaurant ? (
               <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: '2rem', textAlign: 'center', color: 'var(--text-2)' }}>
-                <span style={{ fontSize: '2.5rem', display: 'block', marginBottom: '1rem' }}>🍔</span>
+                <div style={{ marginBottom: '1rem', color: 'var(--border)', display: 'flex', justifyContent: 'center' }}><Utensils size={40} /></div>
                 <p>Select a restaurant on the right to manage menu items.</p>
               </div>
             ) : loadingMenu ? (
@@ -200,7 +207,7 @@ export default function AdminPage() {
                 {menuItems.map(item => (
                   <div key={item.id} className="card" style={{ padding: '1rem', display: 'flex', gap: '1rem', alignItems: 'center' }}>
                     <div style={{ width: 60, height: 60, background: 'var(--surface-2)', borderRadius: 8, overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🍽️'}
+                      {item.imageUrl ? <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : <Utensils size={24} color="var(--text-3)" />}
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.25rem' }}>
@@ -255,7 +262,7 @@ export default function AdminPage() {
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-3)', fontStyle: 'italic' }}>No payment methods configured</p>
                   ) : (payMethods[r.id] || []).map(m => (
                     <div key={m.id} className="card" style={{ padding: '0.875rem 1.125rem', display: 'flex', alignItems: 'center', gap: '0.875rem', opacity: m.isActive ? 1 : 0.5 }}>
-                      <span style={{ fontSize: '1.25rem' }}>{PAYMENT_ICONS[m.type]}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{PAYMENT_ICONS[m.type]}</span>
                       <div style={{ flex: 1 }}>
                         <span style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{m.type.replace('_', ' ')}</span>
                       </div>

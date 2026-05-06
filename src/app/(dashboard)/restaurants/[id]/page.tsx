@@ -4,6 +4,7 @@ import { useParams, useRouter } from 'next/navigation'
 import { Restaurant, MenuItem } from '@/types'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
+import { MapPin, Utensils, UtensilsCrossed } from 'lucide-react'
 
 type GroupedMenu = Record<string, MenuItem[]>
 
@@ -97,16 +98,18 @@ export default function RestaurantDetailPage() {
         {restaurant.imageUrl ? (
           <img src={restaurant.imageUrl} alt={restaurant.name} style={{ width: '100%', height: 220, objectFit: 'cover' }} />
         ) : (
-          <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem' }}>🍽️</div>
+          <div style={{ height: 180, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--border)' }}><Utensils size={64} /></div>
         )}
         <div style={{ padding: '1.5rem' }}>
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.75rem' }}>
             <div>
               <h1 className="font-display" style={{ fontSize: '1.75rem', fontWeight: 700, margin: '0 0 0.375rem' }}>{restaurant.name}</h1>
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
-                <span className={`badge ${restaurant.country === 'INDIA' ? 'badge-india' : 'badge-america'}`}>{restaurant.country === 'INDIA' ? '🇮🇳 India' : '🇺🇸 America'}</span>
+                <span className={`badge ${restaurant.country === 'INDIA' ? 'badge-india' : 'badge-america'}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                  <MapPin size={12} /> {restaurant.country === 'INDIA' ? 'India' : 'America'}
+                </span>
                 {restaurant.cuisineType && <span style={{ fontSize: '0.875rem', color: 'var(--text-2)' }}>{restaurant.cuisineType}</span>}
-                {restaurant.address && <span style={{ fontSize: '0.875rem', color: 'var(--text-3)' }}>📍 {restaurant.address}</span>}
+                {restaurant.address && <span style={{ fontSize: '0.875rem', color: 'var(--text-3)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={14} /> {restaurant.address}</span>}
               </div>
             </div>
             <button onClick={() => router.push('/cart')} className="btn-primary">View Cart →</button>

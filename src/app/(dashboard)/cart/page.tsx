@@ -4,13 +4,18 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 import { useAuth } from '@/contexts/AuthContext'
 import { PaymentMethod } from '@/types'
+import { ShoppingCart, Utensils, CreditCard, QrCode, Zap, Landmark, Wallet, CheckCircle2 } from 'lucide-react'
 
 function fmt(price: number, country: string) {
   return country === 'INDIA' ? `₹${price}` : `$${price}`
 }
 
-const PAYMENT_ICONS: Record<string, string> = {
-  CARD: '💳', QR: '📱', UPI: '⚡', BANK_TRANSFER: '🏦', WALLET: '👛',
+const PAYMENT_ICONS: Record<string, React.ReactNode> = {
+  CARD: <CreditCard size={18} />, 
+  QR: <QrCode size={18} />, 
+  UPI: <Zap size={18} />, 
+  BANK_TRANSFER: <Landmark size={18} />, 
+  WALLET: <Wallet size={18} />
 }
 
 function PaymentGateway({ method, total, country, onSuccess }: { method: PaymentMethod, total: number, country: string, onSuccess: (ref: string) => void }) {
@@ -43,7 +48,9 @@ function PaymentGateway({ method, total, country, onSuccess }: { method: Payment
 
   if (step === 'done') return (
     <div style={{ textAlign: 'center', padding: '2.5rem 1rem' }}>
-      <div style={{ width: 56, height: 56, background: '#D1FAE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem', fontSize: '1.75rem' }}>✓</div>
+      <div style={{ width: 56, height: 56, background: '#D1FAE5', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1rem' }}>
+        <CheckCircle2 size={32} color="#059669" />
+      </div>
       <p style={{ color: 'var(--success)', fontWeight: 600, fontSize: '1.125rem' }}>Payment successful!</p>
     </div>
   )
@@ -57,7 +64,9 @@ function PaymentGateway({ method, total, country, onSuccess }: { method: Payment
           <p style={{ margin: 0, opacity: 0.8, fontSize: '0.8125rem' }}>Total payable</p>
           <p style={{ margin: 0, fontWeight: 700, fontSize: '1.375rem', fontFamily: 'Syne, sans-serif' }}>{fmt(total, country)}</p>
         </div>
-        <span style={{ fontSize: '2rem' }}>{PAYMENT_ICONS[method.type]}</span>
+        <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.2)', padding: '0.5rem', borderRadius: 8 }}>
+          {PAYMENT_ICONS[method.type]}
+        </span>
       </div>
       <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
         {method.type === 'CARD' && (
@@ -86,7 +95,7 @@ function PaymentGateway({ method, total, country, onSuccess }: { method: Payment
         {method.type === 'UPI' && (
           <>
             <div style={{ textAlign: 'center', padding: '1rem', background: 'var(--surface-2)', borderRadius: 10 }}>
-              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>⚡</div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem', color: 'var(--brand)' }}><Zap size={48} /></div>
               <p style={{ fontWeight: 600, color: 'var(--text)', margin: '0 0 0.25rem' }}>UPI ID</p>
               <code style={{ fontSize: '1rem', color: 'var(--brand)' }}>{details.upiId as string}</code>
             </div>
@@ -98,7 +107,9 @@ function PaymentGateway({ method, total, country, onSuccess }: { method: Payment
         )}
         {method.type === 'QR' && (
           <div style={{ textAlign: 'center', padding: '1rem' }}>
-            <div style={{ width: 160, height: 160, margin: '0 auto 1rem', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '4rem' }}>📱</div>
+            <div style={{ width: 160, height: 160, margin: '0 auto 1rem', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--border)' }}>
+              <QrCode size={64} />
+            </div>
             <p style={{ color: 'var(--text-2)', fontSize: '0.875rem' }}>Scan QR code to pay</p>
           </div>
         )}
@@ -108,7 +119,7 @@ function PaymentGateway({ method, total, country, onSuccess }: { method: Payment
             <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
               {((details.providers as string[]) || []).map(p => (
                 <button key={p} style={{ padding: '0.5rem 1.25rem', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--surface-2)', cursor: 'pointer', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text)' }}>
-                  {p === 'APPLE_PAY' ? '🍎 Apple Pay' : '🟢 Google Pay'}
+                  {p === 'APPLE_PAY' ? 'Apple Pay' : 'Google Pay'}
                 </button>
               ))}
             </div>
@@ -136,8 +147,6 @@ export default function CartPage() {
   const restaurantId = items[0]?.menuItem.restaurantId
   const country = items[0]?.menuItem.restaurant?.country || user?.country || 'INDIA'
 
-  const canPlace = user?.role === 'ADMIN' || user?.role === 'MANAGER'
-
   useEffect(() => {
     if (restaurantId) {
       fetch(`/api/restaurants/${restaurantId}/payment-methods`)
@@ -151,7 +160,7 @@ export default function CartPage() {
     }
   }, [restaurantId])
 
-  const handlePaymentSuccess = async (ref: string) => {
+  const submitOrder = async () => {
     setPlacing(true)
     setError('')
     try {
@@ -165,9 +174,20 @@ export default function CartPage() {
       router.push('/orders')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Order failed')
-    } finally {
       setPlacing(false)
       setShowGateway(false)
+    }
+  }
+
+  const handlePaymentSuccess = async (ref: string) => {
+    await submitOrder()
+  }
+
+  const handleCheckoutClick = () => {
+    if (user?.role === 'MEMBER') {
+      submitOrder()
+    } else {
+      setShowGateway(true)
     }
   }
 
@@ -175,7 +195,7 @@ export default function CartPage() {
 
   if (items.length === 0) return (
     <div style={{ textAlign: 'center', padding: '5rem 2rem', color: 'var(--text-2)' }}>
-      <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🛒</div>
+      <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: 'var(--border)' }}><ShoppingCart size={64} /></div>
       <h2 className="font-display" style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Your cart is empty</h2>
       <p style={{ marginBottom: '1.5rem' }}>Add some delicious food items!</p>
       <button onClick={() => router.push('/restaurants')} className="btn-primary">Browse Restaurants</button>
@@ -208,7 +228,9 @@ export default function CartPage() {
               {item.menuItem.imageUrl ? (
                 <img src={item.menuItem.imageUrl} alt={item.menuItem.name} style={{ width: 64, height: 64, borderRadius: 8, objectFit: 'cover', flexShrink: 0 }} />
               ) : (
-                <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0 }}>🍴</div>
+                <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', flexShrink: 0 }}>
+                  <Utensils size={24} />
+                </div>
               )}
               <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600, fontSize: '0.9375rem', marginBottom: '0.2rem' }}>{item.menuItem.name}</div>
@@ -249,48 +271,40 @@ export default function CartPage() {
             </div>
           </div>
 
-          {!canPlace ? (
-            <div style={{ background: '#FEF3C7', border: '1px solid #FDE68A', borderRadius: 8, padding: '0.875rem', fontSize: '0.8125rem', color: '#92400E' }}>
-              ⚠️ Only Managers & Admins can checkout. Contact your manager to place this order.
-            </div>
-          ) : (
-            <>
-              {/* Notes */}
-              <div style={{ marginBottom: '1rem' }}>
-                <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Notes (optional)</label>
-                <textarea className="input-field" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Any special requests..." style={{ resize: 'none' }} />
+          {/* Notes */}
+          <div style={{ marginBottom: '1rem' }}>
+            <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Notes (optional)</label>
+            <textarea className="input-field" value={notes} onChange={e => setNotes(e.target.value)} rows={2} placeholder="Any special requests..." style={{ resize: 'none' }} />
+          </div>
+
+          {/* Payment method selection */}
+          {paymentMethods.length > 0 && (
+            <div style={{ marginBottom: '1.25rem' }}>
+              <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.5rem', fontWeight: 500 }}>Payment method</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {paymentMethods.map(m => (
+                  <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.625rem', border: `1px solid ${selectedMethod === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', background: selectedMethod === m.id ? 'var(--brand-light)' : 'transparent', transition: 'all 0.15s' }}>
+                    <input type="radio" name="payment" value={m.id} checked={selectedMethod === m.id} onChange={() => setSelectedMethod(m.id)} style={{ accentColor: 'var(--brand)' }} />
+                    <span style={{ display: 'flex', alignItems: 'center' }}>{PAYMENT_ICONS[m.type]}</span>
+                    <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{m.type.replace('_', ' ')}</span>
+                  </label>
+                ))}
               </div>
-
-              {/* Payment method selection */}
-              {paymentMethods.length > 0 && (
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.5rem', fontWeight: 500 }}>Payment method</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                    {paymentMethods.map(m => (
-                      <label key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', padding: '0.625rem', border: `1px solid ${selectedMethod === m.id ? 'var(--brand)' : 'var(--border)'}`, borderRadius: 8, cursor: 'pointer', background: selectedMethod === m.id ? 'var(--brand-light)' : 'transparent', transition: 'all 0.15s' }}>
-                        <input type="radio" name="payment" value={m.id} checked={selectedMethod === m.id} onChange={() => setSelectedMethod(m.id)} style={{ accentColor: 'var(--brand)' }} />
-                        <span style={{ fontSize: '1.1rem' }}>{PAYMENT_ICONS[m.type]}</span>
-                        <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{m.type.replace('_', ' ')}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {error && (
-                <div style={{ background: '#FEE2E2', borderRadius: 8, padding: '0.75rem', marginBottom: '0.75rem', fontSize: '0.8125rem', color: '#991B1B' }}>{error}</div>
-              )}
-
-              <button
-                className="btn-primary"
-                style={{ width: '100%', justifyContent: 'center' }}
-                onClick={() => setShowGateway(true)}
-                disabled={placing || !selectedMethod}
-              >
-                {placing ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Processing...</> : 'Proceed to Pay →'}
-              </button>
-            </>
+            </div>
           )}
+
+          {error && (
+            <div style={{ background: '#FEE2E2', borderRadius: 8, padding: '0.75rem', marginBottom: '0.75rem', fontSize: '0.8125rem', color: '#991B1B' }}>{error}</div>
+          )}
+
+          <button
+            className="btn-primary"
+            style={{ width: '100%', justifyContent: 'center' }}
+            onClick={handleCheckoutClick}
+            disabled={placing || !selectedMethod}
+          >
+            {placing ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Processing...</> : (user?.role === 'MEMBER' ? 'Submit for Approval' : 'Proceed to Pay →')}
+          </button>
         </div>
       </div>
     </div>

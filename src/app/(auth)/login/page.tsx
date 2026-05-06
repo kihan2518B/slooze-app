@@ -12,15 +12,6 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const DEMO_USERS = [
-    { label: 'Nick Fury (Admin)', email: 'nick.fury@shield.com' },
-    { label: 'Capt. Marvel (Mgr-India)', email: 'captain.marvel@shield.com' },
-    { label: 'Capt. America (Mgr-US)', email: 'captain.america@shield.com' },
-    { label: 'Thanos (Member-India)', email: 'thanos@shield.com' },
-    { label: 'Thor (Member-India)', email: 'thor@shield.com' },
-    { label: 'Travis (Member-US)', email: 'travis@shield.com' },
-  ]
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -83,24 +74,6 @@ export default function LoginPage() {
               {loading ? <><span className="spinner" style={{ width: 16, height: 16 }} /> Signing in...</> : 'Sign in'}
             </button>
           </form>
-
-          {/* Demo quick-fill */}
-          <div style={{ marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-            <p style={{ fontSize: '0.8125rem', color: 'var(--text-3)', marginBottom: '0.75rem', textAlign: 'center' }}>Demo accounts (password: <code style={{ background: 'var(--surface-2)', padding: '1px 6px', borderRadius: 4, fontSize: '0.8125rem' }}>password123</code>)</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              {DEMO_USERS.map(u => (
-                <button
-                  key={u.email}
-                  onClick={() => { setEmail(u.email); setPassword('password123') }}
-                  style={{ background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem 0.625rem', fontSize: '0.75rem', color: 'var(--text-2)', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-                  onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--brand)')}
-                  onMouseLeave={e => (e.currentTarget.style.borderColor = 'var(--border)')}
-                >
-                  {u.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: 'var(--text-2)' }}>

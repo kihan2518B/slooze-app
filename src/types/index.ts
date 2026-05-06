@@ -72,6 +72,7 @@ export interface Order {
   restaurant: Pick<Restaurant, 'id' | 'name'>
   items: OrderItem[]
   paymentMethod?: PaymentMethod
+  confirmedBy?: Pick<User, 'id' | 'name'> | null
 }
 
 

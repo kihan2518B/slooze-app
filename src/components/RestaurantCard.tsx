@@ -1,11 +1,7 @@
 'use client'
 import Link from 'next/link'
 import { Restaurant } from '@/types'
-
-const CUISINE_EMOJIS: Record<string, string> = {
-  'North Indian': '🍛', 'Street Food': '🥘', 'American': '🍔', 'Fine Dining': '🍽️',
-  'Italian': '🍝', 'Chinese': '🥡', 'Mexican': '🌮', 'Japanese': '🍜',
-}
+import { MapPin, Utensils, UtensilsCrossed } from 'lucide-react'
 
 interface RestaurantCardProps {
   restaurant: Restaurant
@@ -48,13 +44,13 @@ export default function RestaurantCard({ restaurant: r, idx = 0, isEditable, onE
         {r.imageUrl ? (
           <img src={r.imageUrl} alt={r.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
         ) : (
-          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '3.5rem' }}>
-            {CUISINE_EMOJIS[r.cuisineType || ''] || '🍽️'}
+          <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--border)' }}>
+            <Utensils size={48} />
           </div>
         )}
         <div style={{ position: 'absolute', top: 12, right: 12 }}>
-          <span className={`badge ${r.country === 'INDIA' ? 'badge-india' : 'badge-america'}`}>
-            {r.country === 'INDIA' ? '🇮🇳 India' : '🇺🇸 America'}
+          <span className={`badge ${r.country === 'INDIA' ? 'badge-india' : 'badge-america'}`} style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+            <MapPin size={12} /> {r.country === 'INDIA' ? 'India' : 'America'}
           </span>
         </div>
       </div>
@@ -73,8 +69,8 @@ export default function RestaurantCard({ restaurant: r, idx = 0, isEditable, onE
           </p>
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.8125rem', color: 'var(--text-3)', marginTop: 'auto' }}>
-          {r.address && <span>📍 {r.address}</span>}
-          {r._count && <span>🍴 {r._count.menuItems} items</span>}
+          {r.address && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><MapPin size={14} /> {r.address}</span>}
+          {r._count && <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}><UtensilsCrossed size={14} /> {r._count.menuItems} items</span>}
         </div>
         
         {isEditable && onEdit && (

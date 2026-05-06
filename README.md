@@ -8,7 +8,7 @@ A full-stack, production-grade food ordering web application with RBAC (Role-Bas
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS |
+| Frontend | Next.js 16 (App Router), TypeScript, Tailwind CSS |
 | Backend | Next.js API Routes (serverless) |
 | Database | PostgreSQL via NeonDB + Prisma ORM 6.8 |
 | Auth | JWT (httpOnly cookies) + bcrypt password hashing |
@@ -25,7 +25,7 @@ A full-stack, production-grade food ordering web application with RBAC (Role-Bas
 - **Restaurant Browsing** – View restaurants and menus filtered by your country
 - **Cart System** – Add/remove items, update quantities
 - **Order Placement** – Managers & Admins can checkout and pay
-- **Fake Payment Gateway** – Card, UPI, QR, Wallet simulated payment flows
+- **Dummy Payment Gateway** – Card, UPI, QR, Wallet simulated payment flows
 - **Order Management** – History, cancel orders (Manager/Admin only)
 - **Admin Panel** – Create users, manage restaurants, configure payment methods
 - **Cloudinary** – Optional image upload for restaurants and menu items
@@ -41,7 +41,7 @@ A full-stack, production-grade food ordering web application with RBAC (Role-Bas
 | Place order (checkout) | ✅ | ✅ | ❌ |
 | Cancel order | ✅ | ✅ | ❌ |
 | Manage payment methods | ✅ | ❌ | ❌ |
-| Create users | ✅ | ✅ (Members only, own country) | ❌ |
+| Create users | ✅ | ❌ | ❌ |
 | View all orders | ✅ | ✅ (own country) | Own only |
 
 ## ReBAC (Country Scoping)

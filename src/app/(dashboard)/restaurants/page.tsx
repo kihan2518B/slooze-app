@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Restaurant } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { MapPin, Utensils } from 'lucide-react'
 import RestaurantCard from '@/components/RestaurantCard'
 
 export default function RestaurantsPage() {
@@ -43,7 +44,8 @@ export default function RestaurantsPage() {
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
         <div>
           <h1 className="font-display" style={{ fontSize: '1.875rem', fontWeight: 700, margin: '0 0 0.25rem' }}>
-            {user?.country === 'INDIA' ? '🇮🇳' : user?.country === 'AMERICA' ? '🇺🇸' : '🌍'} Restaurants
+            <MapPin size={24} style={{ display: 'inline', verticalAlign: 'middle', marginRight: 8 }} />
+            {user?.country === 'INDIA' ? 'India' : user?.country === 'AMERICA' ? 'America' : 'All'} Restaurants
           </h1>
           <p style={{ color: 'var(--text-2)', margin: 0, fontSize: '0.9375rem' }}>
             {user?.role === 'ADMIN' ? 'All restaurants across countries' : `Showing restaurants in ${user?.country === 'INDIA' ? 'India' : 'America'}`}
@@ -60,7 +62,7 @@ export default function RestaurantsPage() {
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-2)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🍽️</div>
+          <div style={{ color: 'var(--border)', display: 'flex', justifyContent: 'center', marginBottom: '1rem' }}><Utensils size={48} /></div>
           <p style={{ fontSize: '1.0625rem' }}>{search ? 'No restaurants match your search' : 'No restaurants available'}</p>
         </div>
       ) : (

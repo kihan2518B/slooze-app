@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { Order } from '@/types'
+import { CreditCard, QrCode, Zap, Landmark, Wallet, Utensils, ClipboardList, CheckCircle } from 'lucide-react'
 
 function fmt(price: number, country: string) {
   return country === 'INDIA' ? `₹${price}` : `$${price}`
@@ -12,8 +13,12 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: 'badge-cancelled', DELIVERED: 'badge-placed',
 }
 
-const PAYMENT_ICONS: Record<string, string> = {
-  CARD: '💳', QR: '📱', UPI: '⚡', BANK_TRANSFER: '🏦', WALLET: '👛',
+const PAYMENT_ICONS: Record<string, React.ReactNode> = {
+  CARD: <CreditCard size={20} />, 
+  QR: <QrCode size={20} />, 
+  UPI: <Zap size={20} />, 
+  BANK_TRANSFER: <Landmark size={20} />, 
+  WALLET: <Wallet size={20} />
 }
 
 export default function OrdersPage() {
@@ -21,6 +26,7 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
   const [loading, setLoading] = useState(true)
   const [cancelling, setCancelling] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState<string | null>(null)
   const [filter, setFilter] = useState('ALL')
   const [expanded, setExpanded] = useState<string | null>(null)
 
@@ -46,6 +52,24 @@ export default function OrdersPage() {
       }
     } finally {
       setCancelling(null)
+    }
+  }
+
+  const handleConfirm = async (orderId: string) => {
+    if (!confirm('Confirm and place this order?')) return
+    setConfirming(orderId)
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { 
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'PLACED' })
+      })
+      const data = await res.json()
+      if (data.success) {
+        setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: 'PLACED' } : o))
+      }
+    } finally {
+      setConfirming(null)
     }
   }
 
@@ -92,7 +116,7 @@ export default function OrdersPage() {
 
       {filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '4rem 2rem', color: 'var(--text-2)' }}>
-          <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</div>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1rem', color: 'var(--border)' }}><ClipboardList size={48} /></div>
           <p style={{ fontSize: '1.0625rem' }}>No orders found</p>
         </div>
       ) : (
@@ -110,8 +134,8 @@ export default function OrdersPage() {
                 onClick={() => setExpanded(expanded === order.id ? null : order.id)}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', flexShrink: 0 }}>
-                    {order.paymentMethod ? PAYMENT_ICONS[order.paymentMethod.type] : '🍽️'}
+                  <div style={{ width: 44, height: 44, borderRadius: 10, background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-3)', flexShrink: 0 }}>
+                    {order.paymentMethod ? PAYMENT_ICONS[order.paymentMethod.type] : <Utensils size={20} />}
                   </div>
                   <div>
                     <div style={{ fontWeight: 600, fontSize: '0.9375rem', color: 'var(--text)', marginBottom: '0.2rem' }}>
@@ -125,6 +149,9 @@ export default function OrdersPage() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   {user?.role !== 'MEMBER' && order.user && (
                     <span style={{ fontSize: '0.8125rem', color: 'var(--text-3)' }}>by {order.user.name}</span>
+                  )}
+                  {order.confirmedBy && (
+                    <span style={{ fontSize: '0.8125rem', color: 'var(--success)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><CheckCircle size={14} /> Confirmed by {order.confirmedBy.name}</span>
                   )}
                   <span className={`badge ${STATUS_STYLES[order.status] || 'badge-pending'}`}>{order.status}</span>
                   <span style={{ fontWeight: 700, fontSize: '1rem', color: 'var(--text)', fontFamily: 'Syne, sans-serif' }}>
@@ -176,15 +203,25 @@ export default function OrdersPage() {
                     </div>
                   </div>
 
-                  {canCancel && order.status !== 'CANCELLED' && order.status !== 'DELIVERED' && (
-                    <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end' }}>
+                  {(canCancel && order.status !== 'CANCELLED' && order.status !== 'DELIVERED') && (
+                    <div style={{ marginTop: '1rem', display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
                       <button
                         onClick={() => handleCancel(order.id)}
-                        disabled={cancelling === order.id}
+                        disabled={cancelling === order.id || confirming === order.id}
                         style={{ background: '#FEE2E2', color: '#991B1B', border: '1px solid #FCA5A5', borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
                       >
                         {cancelling === order.id ? <><span className="spinner" style={{ width: 14, height: 14, borderColor: '#FCA5A5', borderTopColor: '#991B1B' }} /> Cancelling...</> : '✕ Cancel Order'}
                       </button>
+                      
+                      {order.status === 'PENDING' && (
+                        <button
+                          onClick={() => handleConfirm(order.id)}
+                          disabled={cancelling === order.id || confirming === order.id}
+                          style={{ background: '#D1FAE5', color: '#065F46', border: '1px solid #6EE7B7', borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' }}
+                        >
+                          {confirming === order.id ? <><span className="spinner" style={{ width: 14, height: 14, borderColor: '#6EE7B7', borderTopColor: '#065F46' }} /> Confirming...</> : <><CheckCircle size={16} /> Confirm Order</>}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

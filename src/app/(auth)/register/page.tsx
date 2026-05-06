@@ -87,7 +87,7 @@ export default function RegisterPage() {
               <div>
                 <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: 500, color: 'var(--text-2)', marginBottom: '0.4rem' }}>Country *</label>
                 <select className="input-field" value={form.country} onChange={e => set('country', e.target.value)}>
-                  {COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
+                  {COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
                 </select>
               </div>
               <div>

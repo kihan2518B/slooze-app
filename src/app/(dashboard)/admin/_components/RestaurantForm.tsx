@@ -69,7 +69,7 @@ export default function RestaurantForm({ initialData, onSuccess, onCancel }: Res
           <div>
             <label style={{ display: 'block', fontSize: '0.8125rem', color: 'var(--text-2)', marginBottom: '0.3rem', fontWeight: 500 }}>Country</label>
             <select className="input-field" value={form.country} onChange={e => setForm(p => ({ ...p, country: e.target.value as any }))}>
-              {COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.icon} {c.label}</option>)}
+              {COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
             </select>
           </div>
           <div>
