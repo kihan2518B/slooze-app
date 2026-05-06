@@ -71,21 +71,12 @@ npm install
 cp .env.example .env
 ```
 
-Edit `.env`:
-```env
-DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
-JWT_SECRET="your-secret-key"
+Edit `.env` according to you.
 
-# Optional - Cloudinary image uploads
-CLOUDINARY_CLOUD_NAME="your_cloud_name"
-CLOUDINARY_API_KEY="your_api_key"
-CLOUDINARY_API_SECRET="your_api_secret"
-```
-
-### 3. Run Database Migrations
+### 3. Push Modals to database
 
 ```bash
-npx prisma migrate dev --name init
+npx prisma db push
 ```
 
 ### 4. Seed Demo Data
