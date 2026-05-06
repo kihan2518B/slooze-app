@@ -17,6 +17,13 @@ A full-stack, production-grade food ordering web application with RBAC (Role-Bas
 
 ---
 
+## Demo
+
+- **Video**: https://drive.google.com/file/d/11g58BTN9qf7MTq9FqfNNZfMmcnsMmOmH/view?usp=sharing
+- **Live Demo Link:** https://slooze-app-five.vercel.app
+
+---
+
 ## Features
 
 - **Full Authentication** – Register restaurant + admin account, JWT-based login with httpOnly cookies
