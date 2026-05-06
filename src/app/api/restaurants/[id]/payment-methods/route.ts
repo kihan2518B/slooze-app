@@ -33,7 +33,26 @@ export const POST = withAuth(async (req, user, params) => {
 export const PUT = withAuth(async (req, user, params) => {
   if (user.role !== 'ADMIN') return apiError('Only admins can manage payment methods', 403)
   const body = await req.json()
-  const { methodId, isActive } = body
-  const method = await prisma.paymentMethod.update({ where: { id: methodId }, data: { isActive } })
+  const { methodId, isActive, details, type } = body
+  
+  if (!methodId) return apiError('Method ID is required', 400)
+  
+  const updateData: any = {}
+  if (isActive !== undefined) updateData.isActive = isActive
+  if (details) updateData.details = details
+  if (type) updateData.type = type
+
+  const method = await prisma.paymentMethod.update({ where: { id: methodId }, data: updateData })
   return apiResponse(method)
+})
+
+export const DELETE = withAuth(async (req, user, params) => {
+  if (user.role !== 'ADMIN') return apiError('Only admins can manage payment methods', 403)
+  const { searchParams } = new URL(req.url)
+  const methodId = searchParams.get('id')
+  
+  if (!methodId) return apiError('Method ID is required', 400)
+  
+  await prisma.paymentMethod.delete({ where: { id: methodId } })
+  return apiResponse({ success: true, message: 'Payment method deleted' })
 })

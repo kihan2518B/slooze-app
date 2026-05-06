@@ -27,6 +27,7 @@ export default function AdminPage() {
   const [users, setUsers] = useState<User[]>([])
   const [restaurants, setRestaurants] = useState<Restaurant[]>([])
   const [payMethods, setPayMethods] = useState<Record<string, PaymentMethod[]>>({})
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
 
   // Restaurant form state
@@ -73,19 +74,40 @@ export default function AdminPage() {
     }).finally(() => setLoading(false))
   }, [user, router])
 
-  const handleTogglePayment = async (restaurantId: string, methodId: string, isActive: boolean) => {
-    const res = await fetch(`/api/restaurants/${restaurantId}/payment-methods`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ methodId, isActive: !isActive }),
-    })
-    const data = await res.json()
-    if (data.success) {
-      setPayMethods(prev => ({
-        ...prev,
-        [restaurantId]: prev[restaurantId].map(m => m.id === methodId ? { ...m, isActive: !isActive } : m),
-      }))
-    }
+  const handleTogglePayment = async (restId: string, methodId: string, isActive: boolean) => {
+    try {
+      const res = await fetch(`/api/restaurants/${restId}/payment-methods`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ methodId, isActive: !isActive }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPayMethods(prev => ({
+          ...prev,
+          [restId]: prev[restId].map(m => m.id === methodId ? { ...m, isActive: !isActive } : m),
+        }))
+      }
+    } catch (e) { console.error(e) }
+  }
+
+  const handleDeletePayment = async (restId: string, methodId: string) => {
+    if (!confirm('Are you sure you want to delete this payment method?')) return
+    try {
+      const res = await fetch(`/api/restaurants/${restId}/payment-methods?id=${methodId}`, {
+        method: 'DELETE',
+      })
+      const data = await res.json()
+      if (data.success) {
+        setPayMethods(prev => ({
+          ...prev,
+          [restId]: prev[restId].filter(m => m.id !== methodId),
+        }))
+        if (editingPaymentMethod?.id === methodId) {
+          setEditingPaymentMethod(null)
+        }
+      }
+    } catch (e) { console.error(e) }
   }
 
   if (loading) return <div style={{ textAlign: 'center', padding: '3rem' }}><div className="spinner" style={{ margin: '0 auto' }} /></div>
@@ -267,12 +289,26 @@ export default function AdminPage() {
                         <span style={{ fontWeight: 600, fontSize: '0.9375rem' }}>{m.type.replace('_', ' ')}</span>
                       </div>
                       <span className={`badge ${m.isActive ? 'badge-placed' : 'badge-cancelled'}`}>{m.isActive ? 'Active' : 'Disabled'}</span>
-                      <button
-                        onClick={() => handleTogglePayment(r.id, m.id, m.isActive)}
-                        style={{ background: m.isActive ? '#FEE2E2' : '#D1FAE5', color: m.isActive ? '#991B1B' : '#065F46', border: 'none', borderRadius: 6, padding: '0.3rem 0.75rem', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer' }}
-                      >
-                        {m.isActive ? 'Disable' : 'Enable'}
-                      </button>
+                      <div style={{ display: 'flex', gap: '0.375rem' }}>
+                        <button
+                          onClick={() => setEditingPaymentMethod(m)}
+                          style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border)', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer' }}
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleTogglePayment(r.id, m.id, m.isActive)}
+                          style={{ background: m.isActive ? '#FEE2E2' : '#D1FAE5', color: m.isActive ? '#991B1B' : '#065F46', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer' }}
+                        >
+                          {m.isActive ? 'Disable' : 'Enable'}
+                        </button>
+                        <button
+                          onClick={() => handleDeletePayment(r.id, m.id)}
+                          style={{ background: '#FEE2E2', color: '#991B1B', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.8125rem', fontWeight: 500, cursor: 'pointer' }}
+                        >
+                          Delete
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -282,7 +318,18 @@ export default function AdminPage() {
 
           <PaymentMethodForm 
             restaurants={restaurants} 
-            onSuccess={(restId, pm) => setPayMethods(prev => ({ ...prev, [restId]: [...(prev[restId] || []), pm] }))} 
+            initialData={editingPaymentMethod}
+            onCancel={() => setEditingPaymentMethod(null)}
+            onSuccess={(restId, pm, isEdit) => {
+              setPayMethods(prev => {
+                const list = prev[restId] || []
+                if (isEdit) {
+                  return { ...prev, [restId]: list.map(m => m.id === pm.id ? pm : m) }
+                }
+                return { ...prev, [restId]: [...list, pm] }
+              })
+              setEditingPaymentMethod(null)
+            }} 
           />
         </div>
       )}
